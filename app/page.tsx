@@ -115,7 +115,7 @@ export default function Home() {
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {searchQuery ? `Resultados para "${searchQuery}"` : 'Catálogo de Repuestos y Accesorios'}
+                  {searchQuery ? `Resultados para "${searchQuery}"` : 'Catálogo de Accesorios y Repuestos'}
                 </h1>
                 <p className="text-gray-500 text-sm">
                   {productos.length} {productos.length === 1 ? 'producto encontrado' : 'productos encontrados'}
