@@ -133,10 +133,16 @@ export default function MisPedidosPage() {
                     )}
 
                     <div className="mt-6 text-sm text-gray-600 flex justify-between items-center border-t border-gray-100 pt-4">
-                      <span>Este pedido contiene {pedido.items_count} producto(s) integrados.</span>
-                      <button className="text-[#0033a0] font-medium hover:underline text-sm">
+                      <span>Este pedido contiene {pedido.items_count} producto(s).</span>
+                      <Link 
+                        href={`/mis-pedidos/${pedido.id}`}
+                        className="text-[#0033a0] font-medium hover:underline text-sm flex items-center gap-1"
+                      >
                         Ver Detalles
-                      </button>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </Link>
                     </div>
                   </div>
                 </div>
