@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCart } from '@/components/providers/CartProvider';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface NavBarProps {
   searchQuery?: string;
@@ -16,6 +17,7 @@ export default function NavBar({ searchQuery = '', setSearchQuery, showSearch = 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userName, setUserName] = useState('');
   const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -29,6 +31,15 @@ export default function NavBar({ searchQuery = '', setSearchQuery, showSearch = 
       }
     });
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    setUserName('');
+    setIsAdminAuth(false);
+    router.push('/login');
+    router.refresh();
+  };
 
   return (
     <header className="bg-[#0033a0] text-white p-4 sticky top-0 z-50 shadow-md">
@@ -61,7 +72,18 @@ export default function NavBar({ searchQuery = '', setSearchQuery, showSearch = 
         <div className="flex items-center space-x-6">
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-blue-200 hidden sm:inline-block">Hola, {userName}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-blue-200 hidden sm:inline-block">Hola, {userName}</span>
+                <button
+                  onClick={handleLogout}
+                  title="Cerrar Sesión"
+                  className="p-1.5 text-blue-200 hover:text-white hover:bg-white/10 rounded-full transition-colors flex items-center justify-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
               {isAdminAuth && (
                 <Link 
                   href="/dashboard/pedidos"
