@@ -14,10 +14,19 @@ interface NavBarProps {
 export default function NavBar({ searchQuery = '', setSearchQuery, showSearch = false }: NavBarProps) {
   const { cartCount, setIsOpen } = useCart();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setIsAuthenticated(!!user);
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        setIsAuthenticated(true);
+        setUserName(user.user_metadata?.nombre || user.email?.split('@')[0] || '');
+        const { data } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+        if (data && (data.role === 'admin' || data.role === 'supervisor')) {
+          setIsAdminAuth(true);
+        }
+      }
     });
   }, []);
 
@@ -51,15 +60,20 @@ export default function NavBar({ searchQuery = '', setSearchQuery, showSearch = 
 
         <div className="flex items-center space-x-6">
           {isAuthenticated ? (
-            <Link 
-              href="/dashboard/pedidos"
-              className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-white/20"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-              Gestión
-            </Link>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-blue-200 hidden sm:inline-block">Hola, {userName}</span>
+              {isAdminAuth && (
+                <Link 
+                  href="/dashboard/pedidos"
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-medium transition-all border border-white/20"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  </svg>
+                  Gestión
+                </Link>
+              )}
+            </div>
           ) : (
             <Link 
               href="/login"

@@ -76,7 +76,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 .select('role')
                 .eq('user_id', user.id)
                 .single();
-            if (data) setRole(data.role);
+            
+            if (data) {
+                setRole(data.role);
+                if (data.role === 'user') {
+                    router.push('/');
+                    return;
+                }
+            } else {
+                router.push('/');
+            }
         };
         loadUser();
     }, [router]);

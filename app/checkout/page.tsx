@@ -149,7 +149,7 @@ export default function CheckoutPage() {
                       id="notas"
                       name="notas"
                       rows={4}
-                      className="shadow-sm focus:ring-[#0033a0] focus:border-[#0033a0] block w-full sm:text-sm border-gray-300 rounded-md p-3"
+                      className="shadow-sm focus:ring-[#0033a0] focus:border-[#0033a0] block w-full sm:text-sm border-gray-300 rounded-md p-3 text-gray-900 bg-white"
                       placeholder="Ej. Entregar en sucursal Viña del Mar, incluir mangueras adicionales..."
                       value={notas}
                       onChange={(e) => setNotas(e.target.value)}
