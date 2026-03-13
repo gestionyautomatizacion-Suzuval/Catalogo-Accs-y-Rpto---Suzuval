@@ -10,6 +10,8 @@ interface Pedido {
   estado: string;
   total_calculado: number;
   created_at: string;
+  cliente_nombre?: string;
+  cliente_email?: string;
   auth_users?: { email: string };
 }
 
@@ -38,6 +40,8 @@ export default function PedidosAdminPage() {
         user_id,
         estado,
         total_calculado,
+        cliente_nombre,
+        cliente_email,
         created_at
       `)
       .order('created_at', { ascending: false });
@@ -159,7 +163,9 @@ export default function PedidosAdminPage() {
                   <tr key={pedido.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-[#0033a0]">#{pedido.id.substring(0,8).toUpperCase()}</div>
-                      <div className="text-xs text-gray-500 font-mono" title={pedido.user_id}>Cliente: {pedido.user_id.substring(0,8)}...</div>
+                      <div className="text-xs text-gray-700 font-medium mt-1 truncate max-w-[150px]" title={pedido.cliente_email || pedido.user_id}>
+                        {pedido.cliente_nombre || (pedido.cliente_email ? pedido.cliente_email.split('@')[0] : `ID: ${pedido.user_id.substring(0,8)}`)}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {new Date(pedido.created_at).toLocaleString('es-CL', {

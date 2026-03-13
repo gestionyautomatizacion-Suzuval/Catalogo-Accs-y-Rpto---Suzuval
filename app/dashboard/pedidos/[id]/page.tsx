@@ -22,7 +22,9 @@ interface Pedido {
   user_id: string;
   estado: string;
   total_calculado: number;
-  notas: string;
+  notas_cliente: string;
+  cliente_nombre?: string;
+  cliente_email?: string;
   created_at: string;
   updated_at: string;
   pedido_items: PedidoItem[];
@@ -184,8 +186,8 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                   <h3 className="text-lg font-bold text-gray-800">Notas / Instrucciones del Cliente</h3>
                </div>
                <div className="p-6">
-                  {pedido.notas ? (
-                     <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{pedido.notas}</p>
+                  {pedido.notas_cliente ? (
+                     <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">{pedido.notas_cliente}</p>
                   ) : (
                      <p className="text-gray-400 text-sm italic">Sin notas provistas por el cliente.</p>
                   )}
@@ -243,8 +245,10 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                      <p className="font-mono text-xs text-gray-900 bg-gray-100 p-2 rounded break-all">{pedido.id}</p>
                   </div>
                   <div>
-                     <p className="text-gray-500 mb-1">ID Cliente (Usuario Auth)</p>
-                     <p className="font-mono text-xs text-gray-900 bg-gray-100 p-2 rounded break-all">{pedido.user_id}</p>
+                     <p className="text-gray-500 mb-1">Cliente</p>
+                     <p className="font-medium text-sm text-gray-900">{pedido.cliente_nombre || 'No registrado'}</p>
+                     <p className="text-xs text-gray-500 mt-0.5">{pedido.cliente_email || 'Sin correo asociado'}</p>
+                     <p className="font-mono text-[10px] text-gray-400 mt-1" title="Auth UUID">ID: {pedido.user_id}</p>
                   </div>
                   <div>
                      <p className="text-gray-500 mb-1">Fecha Creación</p>

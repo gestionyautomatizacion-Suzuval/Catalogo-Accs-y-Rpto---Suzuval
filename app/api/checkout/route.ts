@@ -10,6 +10,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    const { nombre } = user.user_metadata || {};
+    const email = user.email || '';
+
     const { pedidoId, notas } = await req.json();
 
     if (!pedidoId) {
@@ -60,13 +63,15 @@ export async function POST(req: Request) {
       }
     }
 
-    // 5. Cambiar el estado de Pedido a 'pendiente_revision'
+    // 5. Cambiar el estado de Pedido a 'pendiente_revision' y guardar info del cliente
     const { error: updateError } = await supabase
       .from('pedidos')
       .update({
         estado: 'pendiente_revision',
         total_calculado: totalActualizado,
         notas_cliente: notas || null,
+        cliente_nombre: nombre || email.split('@')[0],
+        cliente_email: email,
         updated_at: new Date().toISOString()
       })
       .eq('id', pedidoId);
