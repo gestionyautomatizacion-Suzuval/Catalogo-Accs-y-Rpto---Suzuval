@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useCart } from '@/components/providers/CartProvider';
 import NavBar from '@/components/NavBar';
+import OffersCarousel from '@/components/OffersCarousel';
 
 export default function Home() {
   const { addToCart } = useCart();
@@ -13,6 +14,7 @@ export default function Home() {
   const [productos, setProductos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showCarousel, setShowCarousel] = useState(false);
   const [activeFilters, setActiveFilters] = useState<{ categories: string[]; brands: string[] }>({
     categories: [],
     brands: []
@@ -22,7 +24,21 @@ export default function Home() {
     supabase.auth.getUser().then(({ data: { user } }) => {
       setIsAuthenticated(!!user);
     });
+    fetchConfig();
   }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'offers_carousel_active')
+        .single();
+      if (data) setShowCarousel(data.value);
+    } catch (error) {
+       console.error('Error fetching settings:', error);
+    }
+  };
 
   const fetchProductos = useCallback(async () => {
     setLoading(true);
@@ -101,12 +117,19 @@ export default function Home() {
     setActiveFilters(filters);
   }, []);
 
+  // Obtener solo productos en oferta y que tengan stock
+  const productosEnOferta = productos.filter(p => p.precio_oferta && p.precio_oferta > 0 && p.stock > 0);
+
   return (
     <main className="min-h-screen bg-[#f8fafc]">
       <NavBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} showSearch={true} />
 
-      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row gap-12">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {showCarousel && !searchQuery && activeFilters.categories.length === 0 && activeFilters.brands.length === 0 && (
+          <OffersCarousel productos={productosEnOferta} onAddToCart={handleAddToCart} />
+        )}
+        
+        <div className="flex flex-col md:flex-row gap-12 mt-4">
           {/* Sidebar de Filtros */}
           <Sidebar onFilterChange={handleFilterChange} />
 

@@ -7,10 +7,50 @@ import Link from 'next/link';
 export default function ProductosPage() {
     const [productos, setProductos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [carouselActive, setCarouselActive] = useState(false);
+    const [toggling, setToggling] = useState(false);
 
     useEffect(() => {
         fetchProductos();
+        fetchConfig();
     }, []);
+
+    const fetchConfig = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('site_settings')
+                .select('value')
+                .eq('key', 'offers_carousel_active')
+                .single();
+            if (data && !error) setCarouselActive(data.value);
+        } catch (e) {
+            console.error('Error fetching settings:', e);
+        }
+    };
+
+    const handleToggleCarousel = async () => {
+        setToggling(true);
+        const newState = !carouselActive;
+        // Optimistic UI update
+        setCarouselActive(newState); 
+
+        try {
+            const { error } = await supabase
+                .from('site_settings')
+                .upsert({ key: 'offers_carousel_active', value: newState });
+            
+            if (error) {
+                // Revert on error
+                setCarouselActive(!newState);
+                throw error;
+            }
+        } catch (error) {
+            console.error('Error toggling carousel:', error);
+            alert('Error al cambiar la configuración. Intenta nuevamente.');
+        } finally {
+            setToggling(false);
+        }
+    };
 
     const fetchProductos = async () => {
         try {
@@ -52,15 +92,42 @@ export default function ProductosPage() {
                     <h1 className="text-2xl font-bold text-gray-900">Gestión de Productos</h1>
                     <p className="text-sm text-gray-500 mt-1">Administra el catálogo completo, marcas y compatibilidades</p>
                 </div>
-                <Link
-                    href="/dashboard/productos/nuevo"
-                    className="bg-[#0033a0] hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md transition-all flex items-center justify-center gap-2 group"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform group-hover:scale-110 transition-transform" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                    </svg>
-                    Nuevo Producto
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {/* Toggle Switch */}
+                    <div className="flex items-center justify-between gap-3 bg-white px-4 py-2.5 rounded-xl border border-gray-200 shadow-sm w-full sm:w-auto">
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-gray-900">Carrusel de Ofertas</span>
+                            <span className="text-xs text-gray-500">{carouselActive ? 'Visible al público' : 'Oculto'}</span>
+                        </div>
+                        <button
+                            type="button"
+                            disabled={toggling}
+                            onClick={handleToggleCarousel}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#0033a0] focus:ring-offset-2 ${
+                                carouselActive ? 'bg-[#0033a0]' : 'bg-gray-200'
+                            } ${toggling ? 'opacity-50 cursor-wait' : ''}`}
+                            role="switch"
+                            aria-checked={carouselActive}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    carouselActive ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                            />
+                        </button>
+                    </div>
+
+                    <Link
+                        href="/dashboard/productos/nuevo"
+                        className="bg-[#0033a0] hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-md transition-all flex items-center justify-center gap-2 group w-full sm:w-auto"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform group-hover:scale-110 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
+                        Nuevo Producto
+                    </Link>
+                </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
