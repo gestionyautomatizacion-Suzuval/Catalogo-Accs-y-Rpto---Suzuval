@@ -98,7 +98,7 @@ export default function NotificationTracker() {
 
       {/* Flyout Notificaciones */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
+        <div className="absolute right-0 md:left-0 md:right-auto mt-2 w-[calc(100vw-2rem)] sm:w-80 bg-white rounded-lg shadow-xl ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
             <h3 className="text-sm font-bold text-gray-900">Notificaciones</h3>
             {unreadCount > 0 && (
