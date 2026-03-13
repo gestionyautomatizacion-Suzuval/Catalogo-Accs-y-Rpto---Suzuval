@@ -15,9 +15,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCarousel, setShowCarousel] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<{ categories: string[]; brands: string[] }>({
+  const [activeFilters, setActiveFilters] = useState<{ categories: string[]; brands: string[]; families: string[] }>({
     categories: [],
-    brands: []
+    brands: [],
+    families: []
   });
 
   useEffect(() => {
@@ -81,15 +82,27 @@ export default function Home() {
 
       let filteredData = data || [];
 
-      // Aplicar filtro de marcas (esto requiere filtrar en cliente o un join más complejo en Supabase)
-      // Dado que la relación producto -> compatibilidad -> modelos -> familias -> marcas es multinivel,
-      // la forma más limpia de hacerlo sin complicar el RLS es filtrar el resultado.
-      if (activeFilters.brands.length > 0) {
+      // Aplicar filtro de marcas y familias (esto requiere filtrar en cliente o un join más complejo en Supabase)
+      if (activeFilters.brands.length > 0 || activeFilters.families.length > 0) {
         filteredData = filteredData.filter(producto => {
-          const productBrands = producto.compatibilidad?.map((c: any) => 
-            c.modelos?.familias?.marca_id
-          ) || [];
-          return activeFilters.brands.some(brandId => productBrands.includes(brandId));
+          const compatibilidades = producto.compatibilidad || [];
+          
+          let matchesBrand = true;
+          let matchesFamily = true;
+
+          // Si hay filtros de marca activos, el producto debe tener al menos una compatibilidad de esa marca
+          if (activeFilters.brands.length > 0) {
+            const productBrands = compatibilidades.map((c: any) => c.modelos?.familias?.marca_id);
+            matchesBrand = activeFilters.brands.some(brandId => productBrands.includes(brandId));
+          }
+
+          // Si hay filtros de familia activos, el producto debe tener al menos una compatibilidad de esa familia específica
+          if (activeFilters.families.length > 0) {
+            const productFamilies = compatibilidades.map((c: any) => c.modelos?.familia_id);
+            matchesFamily = activeFilters.families.some(familyId => productFamilies.includes(familyId));
+          }
+
+          return matchesBrand && matchesFamily;
         });
       }
 
@@ -113,7 +126,7 @@ export default function Home() {
     await addToCart(id, 1);
   };
 
-  const handleFilterChange = useCallback((filters: { categories: string[]; brands: string[] }) => {
+  const handleFilterChange = useCallback((filters: { categories: string[]; brands: string[]; families: string[] }) => {
     setActiveFilters(filters);
   }, []);
 
@@ -125,7 +138,7 @@ export default function Home() {
       <NavBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} showSearch={true} />
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {showCarousel && !searchQuery && activeFilters.categories.length === 0 && activeFilters.brands.length === 0 && (
+        {showCarousel && !searchQuery && activeFilters.categories.length === 0 && activeFilters.brands.length === 0 && activeFilters.families.length === 0 && (
           <OffersCarousel productos={productosEnOferta} onAddToCart={handleAddToCart} />
         )}
         
@@ -162,7 +175,7 @@ export default function Home() {
                 <h3 className="text-lg font-semibold text-gray-900">No encontramos lo que buscas</h3>
                 <p className="text-gray-500 mt-1">Intenta ajustando los filtros o el término de búsqueda.</p>
                 <button 
-                  onClick={() => {setSearchQuery(''); setActiveFilters({categories:[], brands:[]})}}
+                  onClick={() => {setSearchQuery(''); setActiveFilters({categories:[], brands:[], families:[]})}}
                   className="mt-6 text-[#0033a0] font-medium hover:underline"
                 >
                   Limpiar todos los filtros

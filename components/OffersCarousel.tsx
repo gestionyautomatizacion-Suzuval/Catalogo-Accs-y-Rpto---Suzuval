@@ -26,10 +26,30 @@ export default function OffersCarousel({ productos, onAddToCart }: OffersCarouse
         return () => window.removeEventListener('resize', handleScroll);
     }, [productos]);
 
-    const scroll = (direction: 'left' | 'right') => {
+    // Autoplay logic
+    useEffect(() => {
+        if (!productos || productos.length === 0) return;
+        const interval = setInterval(() => {
+            scroll('right', true);
+        }, 10000); // 10 seconds
+        return () => clearInterval(interval);
+    }, [productos]);
+
+    const scroll = (direction: 'left' | 'right', isAuto = false) => {
         if (!scrollContainerRef.current) return;
-        const scrollAmount = direction === 'left' ? -400 : 400;
-        scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        
+        if (direction === 'right') {
+            // Check if we reached the end
+            if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                // Infinite loop: go back to the start smoothly
+                scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+                scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+            }
+        } else {
+            scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+        }
     };
 
     if (!productos || productos.length === 0) return null;
@@ -62,11 +82,10 @@ export default function OffersCarousel({ productos, onAddToCart }: OffersCarouse
                     </svg>
                 </button>
 
-                {/* Contenedor Scroll */}
                 <div
                     ref={scrollContainerRef}
                     onScroll={handleScroll}
-                    className="flex gap-6 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 pt-2 px-2"
+                    className="flex gap-4 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4 pt-2 px-2"
                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                 >
                     <style jsx>{`
@@ -75,7 +94,7 @@ export default function OffersCarousel({ productos, onAddToCart }: OffersCarouse
                         }
                     `}</style>
                     {productos.map((product) => (
-                        <div key={product.id} className="snap-start shrink-0 w-[280px] sm:w-[320px] transition-transform duration-300 hover:-translate-y-1">
+                        <div key={product.id} className="snap-start shrink-0 w-[150px] sm:w-[170px] transition-transform duration-300 hover:-translate-y-1">
                             <ProductCard
                                 id={product.id}
                                 sku={product.sku}
@@ -87,6 +106,7 @@ export default function OffersCarousel({ productos, onAddToCart }: OffersCarouse
                                 categoriaNombre={product.categorias_items?.nombre || 'General'}
                                 imagenUrl={product.imagen_url}
                                 onAddToCart={onAddToCart}
+                                layout="compact"
                             />
                         </div>
                     ))}
