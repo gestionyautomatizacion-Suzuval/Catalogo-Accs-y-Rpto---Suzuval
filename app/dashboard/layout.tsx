@@ -107,7 +107,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 {/* Logo */}
-                <div className="p-6 border-b border-white/10 flex justify-between items-start">
+                <div className="p-4 border-b border-white/10 flex justify-between items-start">
                     <div>
                         <h2 className="text-xl font-bold tracking-wider">
                             Suzuval <span className="font-light text-blue-300">Admin</span>
@@ -119,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 px-3 py-4 space-y-1">
+                <nav className="flex-1 px-3 py-2 space-y-0.5">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname?.startsWith(item.href);
                         return (
@@ -127,7 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setMobileOpen(false)}
-                                className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                                className={`flex items-center space-x-3 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                     isActive
                                         ? 'bg-white/15 text-white shadow-sm'
                                         : 'text-blue-200 hover:bg-white/10 hover:text-white'
@@ -143,7 +143,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="px-3 py-2">
                     <Link
                         href="/"
-                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm text-blue-300/70 hover:bg-white/10 hover:text-white transition-all"
+                        className="flex items-center space-x-3 px-4 py-2 rounded-lg text-sm text-blue-300/70 hover:bg-white/10 hover:text-white transition-all"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clipRule="evenodd" />
@@ -153,8 +153,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
 
                 {/* User info + Logout */}
-                <div className="p-4 border-t border-white/10 mt-auto">
-                    <div className="flex items-center gap-3 mb-3">
+                <div className="p-3 border-t border-white/10 mt-auto">
+                    <div className="flex items-center gap-2 mb-2">
                         <div className="w-9 h-9 rounded-full bg-white/15 border border-white/20 flex items-center justify-center font-bold text-sm flex-shrink-0">
                             {displayName.charAt(0).toUpperCase()}
                         </div>
@@ -164,13 +164,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </div>
                     </div>
                     {role && (
-                        <span className={`inline-block text-xs px-2.5 py-1 rounded-full border font-medium mb-3 ${ROLE_COLORS[role] || ROLE_COLORS.user}`}>
+                        <span className={`inline-block text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border font-bold mb-2 ${ROLE_COLORS[role] || ROLE_COLORS.user}`}>
                             {ROLE_LABELS[role] || role}
                         </span>
                     )}
                     <button
                         onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm text-red-300 hover:bg-red-500/15 hover:text-red-200 transition-all border border-transparent hover:border-red-500/20"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm text-red-300 hover:bg-red-500/15 hover:text-red-200 transition-all border border-transparent hover:border-red-500/20"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h6a1 1 0 100-2H4V5h5a1 1 0 100-2H3zm13.293 3.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L17.586 11H10a1 1 0 110-2h7.586l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
