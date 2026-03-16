@@ -27,9 +27,29 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
         const adminClient = createAdminClient();
         
-        // Obtener la url base de public/storage para parsear
+        // 1. Obtener la url base de public/storage para parsear
         const { data: images } = await adminClient.from('productos_imagenes').select('url').eq('producto_id', productId);
+        const { data: mainProduct } = await adminClient.from('productos').select('imagen_url').eq('id', productId).single();
         
+        // 2. Intentar eliminar el producto de la base de datos PRIMERO
+        // Así evitamos borrar las imágenes si la DB rechaza la eliminación por llave foránea
+        const { error } = await adminClient
+            .from('productos')
+            .delete()
+            .eq('id', productId);
+
+        if (error) {
+            console.error('Error DB:', error);
+            // Error de llave foránea (PostgreSQL code 23503)
+            if (error.code === '23503') {
+                 return NextResponse.json({ 
+                     error: 'No se puede eliminar este producto porque está asociado a uno o más pedidos en el historial. Para dejar de venderlo, te recomendamos cambiar su stock a 0.' 
+                 }, { status: 400 });
+            }
+            throw error;
+        }
+
+        // 3. SOLO SI SE ELIMINÓ CON ÉXITO, procedemos a borrar las imágenes del Storage
         if (images && images.length > 0) {
             const filesToRemove = images
                 .filter(img => img.url.includes('productos_imagenes/productos/'))
@@ -44,23 +64,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
             }
         }
         
-        // Imagen principal
-        const { data: mainProduct } = await adminClient.from('productos').select('imagen_url').eq('id', productId).single();
         if (mainProduct && mainProduct.imagen_url && mainProduct.imagen_url.includes('productos_imagenes/productos/')) {
              const parts = mainProduct.imagen_url.split('productos_imagenes/productos/');
              if (parts.length > 1) {
                  await adminClient.storage.from('productos_imagenes').remove([`productos/${parts[1]}`]);
              }
-        }
-
-        const { error } = await adminClient
-            .from('productos')
-            .delete()
-            .eq('id', productId);
-
-        if (error) {
-            console.error('Error DB:', error);
-            throw error;
         }
 
         return NextResponse.json({ success: true, message: 'Producto eliminado' });
