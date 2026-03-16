@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export default function EditarUsuarioPage({ params }: { params: { id: string } }) {
+export default function EditarUsuarioPage({ params }: { params: Promise<{ id: string }> }) {
     const router = useRouter();
-    const userId = params.id;
+    const { id: userId } = use(params);
     
     const [currentRole, setCurrentRole] = useState('');
     const [nombre, setNombre] = useState('');
