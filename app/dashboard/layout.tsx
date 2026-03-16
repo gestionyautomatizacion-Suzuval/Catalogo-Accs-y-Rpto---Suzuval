@@ -73,11 +73,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             const { data } = await supabase
                 .from('user_roles')
-                .select('role')
+                .select('role, estado')
                 .eq('user_id', user.id)
                 .single();
             
             if (data) {
+                if (data.estado === 'suspendido') {
+                    await supabase.auth.signOut();
+                    router.push('/login?error=suspendido');
+                    return;
+                }
+                
                 setRole(data.role);
                 if (data.role === 'user') {
                     router.push('/');

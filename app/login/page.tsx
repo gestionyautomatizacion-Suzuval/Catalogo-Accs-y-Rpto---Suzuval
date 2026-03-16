@@ -17,6 +17,12 @@ export default function LoginPage() {
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) router.push('/dashboard/productos');
         });
+
+        // Verificar si hay error en la URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('error') === 'suspendido') {
+            setError('Tu cuenta ha sido suspendida. Contacta a un administrador.');
+        }
     }, [router]);
 
     const handleLogin = async (e: React.FormEvent) => {

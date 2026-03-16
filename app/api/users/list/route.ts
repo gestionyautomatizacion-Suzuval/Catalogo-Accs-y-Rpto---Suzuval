@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase-server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         // 1. Verificar que el solicitante está autenticado
@@ -28,7 +30,7 @@ export async function GET() {
         // Obtener todos los roles primero
         const { data: roles } = await adminClient
             .from('user_roles')
-            .select('user_id, role, created_at')
+            .select('user_id, role, estado, created_at')
             .order('created_at', { ascending: false });
 
         if (!roles) return NextResponse.json({ users: [] });
@@ -44,6 +46,7 @@ export async function GET() {
                 email: authUser?.email || '—',
                 nombre: authUser?.user_metadata?.nombre || '',
                 role: r.role,
+                estado: r.estado || 'activo',
                 created_at: r.created_at,
             };
         }).filter((u: any) => u.email !== '—');

@@ -172,7 +172,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
 
             // 2. Insert or Update Product
             let currentProductId = productId;
-            const productData = {
+            const productData: any = {
                 sku: sku.toUpperCase(),
                 nombre: nombre,
                 descripcion: descripcion,
@@ -190,6 +190,13 @@ export default function ProductForm({ productId }: { productId?: string }) {
                     .eq('id', productId);
                 if (updateError) throw updateError;
             } else {
+                // Durante creación, agregar rastreabilidad
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    productData.created_by = user.id;
+                    productData.created_by_name = user.user_metadata?.nombre || user.email || 'Usuario';
+                }
+
                 const { data: productoNuevo, error: insertError } = await supabase
                     .from('productos')
                     .insert(productData)

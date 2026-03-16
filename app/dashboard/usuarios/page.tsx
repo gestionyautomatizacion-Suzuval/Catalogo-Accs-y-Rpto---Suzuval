@@ -9,6 +9,7 @@ interface UserWithRole {
     email: string;
     nombre: string;
     role: string;
+    estado?: string;
     created_at: string;
 }
 
@@ -27,6 +28,7 @@ const ROLE_STYLES: Record<string, string> = {
 export default function UsuariosPage() {
     const [users, setUsers] = useState<UserWithRole[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
     const [currentRole, setCurrentRole] = useState('');
     const [currentUserId, setCurrentUserId] = useState('');
 
@@ -50,7 +52,7 @@ export default function UsuariosPage() {
         if (myRole) setCurrentRole(myRole.role);
 
         // Obtener usuarios via API (el servidor hace la consulta con service_role)
-        const res = await fetch('/api/users/list');
+        const res = await fetch('/api/users/list', { cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
             // Filtrar: supervisor no ve admins ni otros supervisors
@@ -61,6 +63,27 @@ export default function UsuariosPage() {
         }
 
         setLoading(false);
+    };
+
+    const handleDelete = async (user: UserWithRole) => {
+        if (!confirm(`¿Estás seguro de eliminar al usuario ${user.email}?\nEsta acción es irreversible.`)) {
+            return;
+        }
+
+        setDeleteLoading(user.id);
+        try {
+            const res = await fetch(`/api/users/${user.id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setUsers(users.filter(u => u.id !== user.id));
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Error al eliminar usuario');
+            }
+        } catch (error) {
+            alert('Error de red al intentar eliminar.');
+        } finally {
+            setDeleteLoading(null);
+        }
     };
 
     return (
@@ -93,19 +116,21 @@ export default function UsuariosPage() {
                                 <th className="px-6 py-4 font-semibold">Usuario</th>
                                 <th className="px-6 py-4 font-semibold">Email</th>
                                 <th className="px-6 py-4 font-semibold">Rol</th>
+                                <th className="px-6 py-4 font-semibold">Estado</th>
                                 <th className="px-6 py-4 font-semibold">Creado</th>
+                                <th className="px-6 py-4 font-semibold text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
+                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                                         Cargando usuarios...
                                     </td>
                                 </tr>
                             ) : users.length === 0 ? (
                                 <tr>
-                                    <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
+                                    <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                                         No hay usuarios registrados.
                                     </td>
                                 </tr>
@@ -131,10 +156,54 @@ export default function UsuariosPage() {
                                                 {ROLE_LABELS[u.role] || u.role}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                                                u.estado === 'suspendido' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'
+                                            }`}>
+                                                {u.estado === 'suspendido' ? 'Suspendido' : 'Activo'}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4 text-gray-500">
                                             {new Date(u.created_at).toLocaleDateString('es-CL', {
                                                 day: '2-digit', month: 'short', year: 'numeric'
                                             })}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {/* Edit Button: Visible for admin, or for supervisor if target is not admin */}
+                                                {(currentRole === 'admin' || (currentRole === 'supervisor' && u.role !== 'admin')) && u.id !== currentUserId && (
+                                                    <Link
+                                                        href={`/dashboard/usuarios/${u.id}/editar`}
+                                                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                                        </svg>
+                                                    </Link>
+                                                )}
+                                                
+                                                {/* Delete Button: Visible only for admin */}
+                                                {currentRole === 'admin' && u.id !== currentUserId && (
+                                                    <button
+                                                        onClick={() => handleDelete(u)}
+                                                        disabled={deleteLoading === u.id}
+                                                        className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors disabled:opacity-50"
+                                                        title="Eliminar"
+                                                    >
+                                                        {deleteLoading === u.id ? (
+                                                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                                            </svg>
+                                                        ) : (
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

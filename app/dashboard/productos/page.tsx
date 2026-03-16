@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default function ProductosPage() {
     const [productos, setProductos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -63,6 +65,7 @@ export default function ProductosPage() {
                     precio,
                     precio_oferta,
                     stock,
+                    created_by_name,
                     categorias_items (nombre),
                     compatibilidad (
                         modelos (
@@ -141,6 +144,7 @@ export default function ProductosPage() {
                                 <th scope="col" className="px-6 py-4 font-bold">Marca / Familia</th>
                                 <th scope="col" className="px-6 py-4 font-bold">Precio</th>
                                 <th scope="col" className="px-6 py-4 font-bold text-center">Stock</th>
+                                <th scope="col" className="px-6 py-4 font-bold">Subido Por</th>
                                 <th scope="col" className="px-6 py-4 font-bold text-right">Acciones</th>
                             </tr>
                         </thead>
@@ -153,7 +157,7 @@ export default function ProductosPage() {
                                 ))
                             ) : productos.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-400 font-medium">
+                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-400 font-medium">
                                         No hay productos registrados en el catálogo.
                                     </td>
                                 </tr>
@@ -210,6 +214,16 @@ export default function ProductosPage() {
                                                 }`}>
                                                     {producto.stock}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-[10px] shrink-0">
+                                                        {(producto.created_by_name || 'S').charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <span className="text-xs font-medium text-gray-600 line-clamp-1 max-w-[120px]" title={producto.created_by_name || 'Sistema Base'}>
+                                                        {producto.created_by_name || 'Sistema Base'}
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <Link 
