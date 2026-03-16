@@ -86,7 +86,7 @@ export default function MisPedidosDetallePage() {
   useEffect(() => {
     fetchPedidoDetalle();
 
-    const { data: { user } } = supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
        if(user) {
           const subs = supabase.channel(`mis_pedidos_detalle_${id}`)
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pedidos', filter: `id=eq.${id}` }, () => {
