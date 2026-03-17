@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { useState } from 'react';
 
 interface ProductCardProps {
     id: string;
@@ -37,6 +38,8 @@ export default function ProductCard({
         }).format(amount);
     };
 
+    const [imgSrc, setImgSrc] = useState(imagenUrl || '/placeholder-product.png');
+
     const hasDiscount = precioOferta && precioOferta < precio;
     const currentPrice = hasDiscount ? precioOferta! : precio;
 
@@ -55,11 +58,12 @@ export default function ProductCard({
                 )}
                 <div className={`relative w-full h-full overflow-hidden ${layout === 'compact' ? 'p-2' : 'p-4'}`}>
                     <Image
-                        src={imagenUrl || '/placeholder-product.png'} // Asegurarse de tener esta imagen en public/
+                        src={imgSrc}
                         alt={nombre}
                         fill
                         className={`object-contain transition-transform duration-500 group-hover:scale-105 ${layout === 'compact' ? 'p-2' : 'p-4'}`}
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        onError={() => setImgSrc('/placeholder-product.png')}
                     />
                 </div>
             </div>

@@ -11,6 +11,7 @@ interface ProductModalProps {
 
 export default function ProductModal({ producto, onClose, onAddToCart }: ProductModalProps) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const [failedImages, setFailedImages] = useState<number[]>([]);
 
     // Obtener la imagen principal y las secundarias
     // Asumimos que la imagen principal viene en imagen_url y las extras en productos_imagenes
@@ -60,11 +61,12 @@ export default function ProductModal({ producto, onClose, onAddToCart }: Product
                             </div>
                         )}
                         <Image
-                            src={allImages[currentImageIndex]}
+                            src={failedImages.includes(currentImageIndex) ? '/placeholder-product.png' : allImages[currentImageIndex]}
                             alt={producto.nombre}
                             fill
                             className="object-contain p-4"
                             sizes="(max-width: 768px) 100vw, 50vw"
+                            onError={() => setFailedImages(prev => [...prev, currentImageIndex])}
                         />
                     </div>
                     
@@ -80,10 +82,11 @@ export default function ProductModal({ producto, onClose, onAddToCart }: Product
                                     }`}
                                 >
                                     <Image
-                                        src={img}
+                                        src={failedImages.includes(index) ? '/placeholder-product.png' : img}
                                         alt={`Miniatura ${index + 1}`}
                                         fill
                                         className="object-contain bg-white pb-1 pt-1"
+                                        onError={() => setFailedImages(prev => [...prev, index])}
                                     />
                                 </button>
                             ))}
