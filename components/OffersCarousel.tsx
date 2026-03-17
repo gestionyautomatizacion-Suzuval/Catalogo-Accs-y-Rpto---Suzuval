@@ -6,9 +6,10 @@ import ProductCard from './ProductCard';
 interface OffersCarouselProps {
     productos: any[];
     onAddToCart: (id: string) => void;
+    onClickCard?: (producto: any) => void;
 }
 
-export default function OffersCarousel({ productos, onAddToCart }: OffersCarouselProps) {
+export default function OffersCarousel({ productos, onAddToCart, onClickCard }: OffersCarouselProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showLeftArrow, setShowLeftArrow] = useState(false);
     const [showRightArrow, setShowRightArrow] = useState(true);
@@ -106,6 +107,7 @@ export default function OffersCarousel({ productos, onAddToCart }: OffersCarouse
                                 categoriaNombre={product.categorias_items?.nombre || 'General'}
                                 imagenUrl={product.imagen_url}
                                 onAddToCart={onAddToCart}
+                                onClickCard={() => onClickCard && onClickCard(product)}
                                 layout="compact"
                             />
                         </div>

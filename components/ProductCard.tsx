@@ -12,6 +12,7 @@ interface ProductCardProps {
     imagenUrl?: string; // Opcional, usará un placeholder si no hay
     onAddToCart: (id: string) => void;
     layout?: 'standard' | 'compact';
+    onClickCard?: () => void;
 }
 
 export default function ProductCard({
@@ -26,6 +27,7 @@ export default function ProductCard({
     imagenUrl,
     onAddToCart,
     layout = 'standard',
+    onClickCard,
 }: ProductCardProps) {
     // Formatear precio a CLP (Pesos Chilenos)
     const formatPrice = (amount: number) => {
@@ -42,13 +44,16 @@ export default function ProductCard({
         <div className="group flex flex-col bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
 
             {/* Imagen del Producto */}
-            <div className="relative w-full aspect-square bg-gray-50 flex items-center justify-center">
+            <div 
+                className={`relative w-full aspect-square bg-gray-50 flex items-center justify-center ${onClickCard ? 'cursor-pointer' : ''}`}
+                onClick={onClickCard}
+            >
                 {hasDiscount && (
                     <div className={`absolute top-2 left-2 bg-red-600 text-white uppercase font-bold rounded-sm shadow-md z-10 tracking-widest ${layout === 'compact' ? 'text-[8px] px-1.5 py-0.5' : 'text-[10px] px-2 py-1.5 top-3 left-3'}`}>
                         OFERTA
                     </div>
                 )}
-                <div className={`relative w-full h-full cursor-pointer overflow-hidden ${layout === 'compact' ? 'p-2' : 'p-4'}`}>
+                <div className={`relative w-full h-full overflow-hidden ${layout === 'compact' ? 'p-2' : 'p-4'}`}>
                     <Image
                         src={imagenUrl || '/placeholder-product.png'} // Asegurarse de tener esta imagen en public/
                         alt={nombre}
@@ -70,7 +75,10 @@ export default function ProductCard({
                 </div>
 
                 {/* Título y Descripción */}
-                <h3 className={`font-bold text-gray-800 leading-snug line-clamp-2 hover:text-[#0033a0] transition-colors cursor-pointer ${layout === 'compact' ? 'text-xs mb-1' : 'text-[15px] mb-1.5'}`}>
+                <h3 
+                    className={`font-bold text-gray-800 leading-snug line-clamp-2 transition-colors ${onClickCard ? 'hover:text-[#0033a0] cursor-pointer' : ''} ${layout === 'compact' ? 'text-xs mb-1' : 'text-[15px] mb-1.5'}`}
+                    onClick={onClickCard}
+                >
                     {nombre}
                 </h3>
                 {layout !== 'compact' && (

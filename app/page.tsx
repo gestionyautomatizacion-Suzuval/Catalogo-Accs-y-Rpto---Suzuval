@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useCart } from '@/components/providers/CartProvider';
 import NavBar from '@/components/NavBar';
 import OffersCarousel from '@/components/OffersCarousel';
+import ProductModal from '@/components/ProductModal';
 
 export default function Home() {
   const { addToCart } = useCart();
@@ -15,6 +16,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCarousel, setShowCarousel] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [activeFilters, setActiveFilters] = useState<{ categories: string[]; brands: string[]; families: string[] }>({
     categories: [],
     brands: [],
@@ -57,6 +59,7 @@ export default function Home() {
           imagen_url,
           categoria_item_id,
           categorias_items (nombre),
+          productos_imagenes (url),
           compatibilidad (
             modelo_id,
             modelos (
@@ -139,7 +142,11 @@ export default function Home() {
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {showCarousel && !searchQuery && activeFilters.categories.length === 0 && activeFilters.brands.length === 0 && activeFilters.families.length === 0 && (
-          <OffersCarousel productos={productosEnOferta} onAddToCart={handleAddToCart} />
+          <OffersCarousel 
+            productos={productosEnOferta} 
+            onAddToCart={handleAddToCart} 
+            onClickCard={(product: any) => setSelectedProduct(product)}
+          />
         )}
         
         <div className="flex flex-col md:flex-row gap-12 mt-4">
@@ -196,6 +203,7 @@ export default function Home() {
                     categoriaNombre={product.categorias_items?.nombre || 'General'}
                     imagenUrl={product.imagen_url}
                     onAddToCart={handleAddToCart}
+                    onClickCard={() => setSelectedProduct(product)}
                   />
                 ))}
               </div>
@@ -203,6 +211,15 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Modal de Producto */}
+      {selectedProduct && (
+        <ProductModal 
+          producto={selectedProduct} 
+          onClose={() => setSelectedProduct(null)} 
+          onAddToCart={handleAddToCart} 
+        />
+      )}
     </main>
   );
 }
