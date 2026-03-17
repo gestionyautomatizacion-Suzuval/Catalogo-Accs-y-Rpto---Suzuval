@@ -67,7 +67,8 @@ export default function Home() {
               familias (marca_id)
             )
           )
-        `);
+        `)
+        .gt('stock', 0); // Solo mostrar productos con stock mayor a 0
 
       // Aplicar búsqueda por SKU o Nombre
       if (searchQuery) {
