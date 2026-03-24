@@ -11,6 +11,7 @@ export default function ProductosPage() {
     const [loading, setLoading] = useState(true);
     const [carouselActive, setCarouselActive] = useState(false);
     const [toggling, setToggling] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         fetchProductos();
@@ -88,6 +89,16 @@ export default function ProductosPage() {
         }
     };
 
+    const filteredProductos = productos.filter(p => {
+        if (!searchTerm) return true;
+        const text = searchTerm.toLowerCase();
+        const matchesNombre = p.nombre.toLowerCase().includes(text);
+        const matchesSku = p.sku.toLowerCase().includes(text);
+        const marcas = Array.from(new Set(p.compatibilidad?.map((c: any) => c.modelos?.familias?.marcas?.nombre).filter(Boolean))).join(' ').toLowerCase();
+        const matchesCategoria = (p.categorias_items?.nombre || '').toLowerCase().includes(text);
+        return matchesNombre || matchesSku || marcas.includes(text) || matchesCategoria;
+    });
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -133,6 +144,25 @@ export default function ProductosPage() {
                 </div>
             </div>
 
+            {/* Filtro / Buscador */}
+            <div className="bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+                <input
+                    type="text"
+                    placeholder="Buscar por código SKU, nombre de producto, marca o categoría..."
+                    className="w-full bg-transparent border-none outline-none focus:ring-0 text-sm font-medium text-gray-900 placeholder-gray-400"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchTerm && (
+                    <button onClick={() => setSearchTerm('')} className="p-1 hover:bg-gray-100 rounded-full text-gray-400 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
+                    </button>
+                )}
+            </div>
+
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-500">
@@ -152,7 +182,7 @@ export default function ProductosPage() {
                             {loading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td colSpan={7} className="px-6 py-6"><div className="h-4 bg-gray-100 rounded w-full"></div></td>
+                                        <td colSpan={8} className="px-6 py-6"><div className="h-4 bg-gray-100 rounded w-full"></div></td>
                                     </tr>
                                 ))
                             ) : productos.length === 0 ? (
@@ -161,8 +191,14 @@ export default function ProductosPage() {
                                         No hay productos registrados en el catálogo.
                                     </td>
                                 </tr>
+                            ) : filteredProductos.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-400 font-medium">
+                                        No se encontraron productos que coincidan con "{searchTerm}".
+                                    </td>
+                                </tr>
                             ) : (
-                                productos.map((producto) => {
+                                filteredProductos.map((producto) => {
                                     // Extraer marcas y familias únicas de las compatibilidades
                                     const marcas = Array.from(new Set(producto.compatibilidad?.map((c: any) => c.modelos?.familias?.marcas?.nombre).filter(Boolean))) as string[];
                                     const familias = Array.from(new Set(producto.compatibilidad?.map((c: any) => c.modelos?.familias?.nombre).filter(Boolean))) as string[];
