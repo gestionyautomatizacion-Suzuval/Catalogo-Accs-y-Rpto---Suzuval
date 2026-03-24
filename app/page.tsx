@@ -58,13 +58,17 @@ export default function Home() {
           stock,
           imagen_url,
           categoria_item_id,
+          es_multimarca,
           categorias_items (nombre),
           productos_imagenes (url),
           compatibilidad (
             modelo_id,
             modelos (
               familia_id,
-              familias (marca_id)
+              familias (
+                marca_id,
+                marcas (nombre)
+              )
             )
           )
         `)
@@ -91,6 +95,15 @@ export default function Home() {
         filteredData = filteredData.filter(producto => {
           const compatibilidades = producto.compatibilidad || [];
           
+          const isMultiMarca = compatibilidades.some((c: any) => {
+            const marcaNombre = c.modelos?.familias?.marcas?.nombre;
+            return marcaNombre && marcaNombre.toUpperCase().includes('MULTI');
+          });
+
+          // Productos "multimarca" explícitos (columna es_multimarca), sin compatibilidad específica,
+          // o asignados a una marca ligada a "MULTI-MARCA" siempre son visibles ante filtros
+          if (producto.es_multimarca === true || compatibilidades.length === 0 || isMultiMarca) return true;
+
           let matchesBrand = true;
           let matchesFamily = true;
 

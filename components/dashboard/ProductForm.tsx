@@ -28,6 +28,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
     const [precioOferta, setPrecioOferta] = useState('');
     const [stock, setStock] = useState('0');
     const [categoriaId, setCategoriaId] = useState('');
+    const [esMultimarca, setEsMultimarca] = useState(false);
     
     // Multi-image State (Up to 5)
     const [productImages, setProductImages] = useState<ProductImage[]>(
@@ -65,6 +66,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
                 setPrecioOferta(prod.precio_oferta ? prod.precio_oferta.toString() : '');
                 setStock(prod.stock.toString());
                 setCategoriaId(prod.categoria_item_id);
+                setEsMultimarca(prod.es_multimarca || false);
             }
 
             // 2. Fetch compatibilities
@@ -203,7 +205,8 @@ export default function ProductForm({ productId }: { productId?: string }) {
                 precio_oferta: precioOferta ? parseFloat(precioOferta) : null,
                 stock: parseInt(stock),
                 categoria_item_id: categoriaId,
-                imagen_url: finalImageUrls[0] || null // Main image is the first one
+                imagen_url: finalImageUrls[0] || null, // Main image is the first one
+                es_multimarca: esMultimarca
             };
 
             if (productId) {
@@ -395,8 +398,30 @@ export default function ProductForm({ productId }: { productId?: string }) {
                     Compatibilidad de Vehículos
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div>
+                {/* Control de Producto Universal */}
+                <div className="mb-8 bg-blue-50/50 p-5 rounded-lg border border-blue-200 shadow-sm flex items-start gap-4 transition-colors">
+                    <div className="flex h-6 items-center">
+                        <input
+                            id="esMultimarcaCheckbox"
+                            type="checkbox"
+                            checked={esMultimarca}
+                            onChange={(e) => setEsMultimarca(e.target.checked)}
+                            className="h-5 w-5 rounded border-gray-300 text-[#0033a0] focus:ring-[#0033a0]"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <label htmlFor="esMultimarcaCheckbox" className="font-bold text-[#0033a0] cursor-pointer">
+                            Universal / Multimarca: Producto visible para todas las marcas
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Al activar esta opción, el producto aparecerá siempre visible independientemente del filtro de marca o modelo que aplique el cliente.
+                        </p>
+                    </div>
+                </div>
+
+                <div className={`transition-all duration-300 ${esMultimarca ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
                         <label className="block text-xs font-black text-gray-400 uppercase mb-2 tracking-widest">Paso 1: Seleccione Marca</label>
                         <select value={selectedMarca} onChange={(e) => { setSelectedMarca(e.target.value); setSelectedFamilia(''); }} className="w-full rounded-lg border-gray-200 shadow-sm px-4 py-3 border bg-white text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-[#0033a0]/20 transition-all">
                             <option value="">Todas las marcas</option>
@@ -454,6 +479,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
                             ) : null;
                         })}
                     </div>
+                </div>
                 </div>
             </div>
 
