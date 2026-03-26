@@ -55,11 +55,8 @@ export default function UsuariosPage() {
         const res = await fetch('/api/users/list', { cache: 'no-store' });
         if (res.ok) {
             const data = await res.json();
-            // Filtrar: supervisor no ve admins ni otros supervisors
-            const filtered = myRole?.role === 'admin'
-                ? data.users
-                : data.users.filter((u: UserWithRole) => u.role === 'user');
-            setUsers(filtered);
+            // Mostrar todos los usuarios, tanto para admin como para supervisor
+            setUsers(data.users);
         }
 
         setLoading(false);
