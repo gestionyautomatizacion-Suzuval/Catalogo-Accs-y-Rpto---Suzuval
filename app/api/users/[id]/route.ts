@@ -43,7 +43,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             }
         }
 
-        const { nombre, role, estado } = await request.json();
+        const { nombre, role, estado, password } = await request.json();
 
         // Si supervisor intenta cambiar rol a admin
         if (requestingRole.role === 'supervisor' && role === 'admin') {
@@ -52,11 +52,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
         const adminClient = createAdminClient();
 
-        // 1. Actualizar metadatos en Auth (nombre)
-        if (nombre) {
-            const { error: authError } = await adminClient.auth.admin.updateUserById(userId, {
-                user_metadata: { nombre }
-            });
+        // 1. Actualizar metadatos en Auth (nombre y/o contraseña)
+        const authUpdates: any = {};
+        if (nombre) authUpdates.user_metadata = { nombre };
+        if (password) {
+            if (password.length < 6) {
+                return NextResponse.json({ error: 'La contraseña debe tener al menos 6 caracteres' }, { status: 400 });
+            }
+            authUpdates.password = password;
+        }
+
+        if (Object.keys(authUpdates).length > 0) {
+            const { error: authError } = await adminClient.auth.admin.updateUserById(userId, authUpdates);
             if (authError) throw authError;
         }
 

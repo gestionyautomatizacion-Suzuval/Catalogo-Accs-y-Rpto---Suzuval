@@ -14,6 +14,7 @@ export default function EditarUsuarioPage({ params }: { params: Promise<{ id: st
     const [role, setRole] = useState('user');
     const [estado, setEstado] = useState('activo');
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -69,7 +70,7 @@ export default function EditarUsuarioPage({ params }: { params: Promise<{ id: st
             const res = await fetch(`/api/users/${userId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, role, estado }),
+                body: JSON.stringify({ nombre, role, estado, password }),
             });
 
             const data = await res.json();
@@ -133,6 +134,19 @@ export default function EditarUsuarioPage({ params }: { params: Promise<{ id: st
                                         type="text"
                                         value={nombre}
                                         onChange={(e) => setNombre(e.target.value)}
+                                        className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2.5 border text-gray-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                        Nueva Contraseña (Opcional)
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="Dejar en blanco para mantener la actual"
+                                        minLength={6}
                                         className="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-4 py-2.5 border text-gray-900"
                                     />
                                 </div>
