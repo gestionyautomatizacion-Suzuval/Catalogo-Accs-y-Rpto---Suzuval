@@ -27,7 +27,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
     const [precio, setPrecio] = useState('');
     const [precioOferta, setPrecioOferta] = useState('');
     const [stock, setStock] = useState('0');
-    const [categoriaId, setCategoriaId] = useState('');
+    const [categoriasIds, setCategoriasIds] = useState<string[]>([]);
     const [esMultimarca, setEsMultimarca] = useState(false);
     
     // Multi-image State (Up to 5)
@@ -45,6 +45,13 @@ export default function ProductForm({ productId }: { productId?: string }) {
     const [selectedMarca, setSelectedMarca] = useState('');
     const [selectedFamilia, setSelectedFamilia] = useState('');
     const [compatibleModels, setCompatibleModels] = useState<string[]>([]);
+
+    // Inline Creation State
+    const [isCreatingFamilia, setIsCreatingFamilia] = useState(false);
+    const [newFamiliaName, setNewFamiliaName] = useState('');
+    const [isCreatingModelo, setIsCreatingModelo] = useState(false);
+    const [newModeloName, setNewModeloName] = useState('');
+    const [creatingEntity, setCreatingEntity] = useState(false);
 
     useEffect(() => {
         fetchReferenceData();
@@ -65,17 +72,25 @@ export default function ProductForm({ productId }: { productId?: string }) {
                 setPrecio(prod.precio.toString());
                 setPrecioOferta(prod.precio_oferta ? prod.precio_oferta.toString() : '');
                 setStock(prod.stock.toString());
-                setCategoriaId(prod.categoria_item_id);
                 setEsMultimarca(prod.es_multimarca || false);
             }
 
-            // 2. Fetch compatibilities
+            // 2. Fetch product categories
+            const { data: prodCats } = await supabase.from('producto_categorias').select('categoria_id').eq('producto_id', id);
+            if (prodCats && prodCats.length > 0) {
+                setCategoriasIds(prodCats.map(c => c.categoria_id));
+            } else if (prod?.categoria_item_id) {
+                // Fallback: use legacy single category column
+                setCategoriasIds([prod.categoria_item_id]);
+            }
+
+            // 3. Fetch compatibilities
             const { data: compats } = await supabase.from('compatibilidad').select('modelo_id').eq('producto_id', id);
             if (compats) {
                 setCompatibleModels(compats.map(c => c.modelo_id));
             }
 
-            // 3. Fetch images
+            // 4. Fetch images
             const { data: imgs } = await supabase.from('productos_imagenes').select('url, orden').eq('producto_id', id).order('orden');
             if (imgs && imgs.length > 0) {
                 const updatedImages = [...productImages];
@@ -125,6 +140,60 @@ export default function ProductForm({ productId }: { productId?: string }) {
                 ? prev.filter(id => id !== modeloId)
                 : [...prev, modeloId]
         );
+    };
+
+    const handleCategoriaToggle = (catId: string) => {
+        setCategoriasIds(prev =>
+            prev.includes(catId)
+                ? prev.filter(id => id !== catId)
+                : [...prev, catId]
+        );
+    };
+
+    const handleCreateFamilia = async () => {
+        if (!newFamiliaName.trim() || !selectedMarca) return;
+        setCreatingEntity(true);
+        try {
+            const { data, error } = await supabase.from('familias').insert([{
+                marca_id: selectedMarca,
+                nombre: newFamiliaName.trim().toUpperCase()
+            }]).select().single();
+            if (error) throw error;
+            if (data) {
+                setFamilias([...familias, data].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+                setSelectedFamilia(data.id);
+                setIsCreatingFamilia(false);
+                setNewFamiliaName('');
+            }
+        } catch (error: any) {
+            console.error('Error creating familia:', error);
+            alert(`Error al crear familia: ${error.message}`);
+        } finally {
+            setCreatingEntity(false);
+        }
+    };
+
+    const handleCreateModelo = async () => {
+        if (!newModeloName.trim() || !selectedFamilia) return;
+        setCreatingEntity(true);
+        try {
+            const { data, error } = await supabase.from('modelos').insert([{
+                familia_id: selectedFamilia,
+                nombre_especifico: newModeloName.trim().toUpperCase()
+            }]).select().single();
+            if (error) throw error;
+            if (data) {
+                setModelos([...modelos, data].sort((a, b) => a.nombre_especifico.localeCompare(b.nombre_especifico)));
+                setCompatibleModels([...compatibleModels, data.id]);
+                setIsCreatingModelo(false);
+                setNewModeloName('');
+            }
+        } catch (error: any) {
+            console.error('Error creating modelo:', error);
+            alert(`Error al crear modelo: ${error.message}`);
+        } finally {
+            setCreatingEntity(false);
+        }
     };
 
     const handleImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +266,10 @@ export default function ProductForm({ productId }: { productId?: string }) {
 
             // 2. Insert or Update Product
             let currentProductId = productId;
+            if (categoriasIds.length === 0) {
+                throw new Error('Debes seleccionar al menos una categoría.');
+            }
+
             const productData: any = {
                 sku: sku.toUpperCase(),
                 nombre: nombre,
@@ -204,7 +277,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
                 precio: parseFloat(precio),
                 precio_oferta: precioOferta ? parseFloat(precioOferta) : null,
                 stock: parseInt(stock),
-                categoria_item_id: categoriaId,
+                categoria_item_id: categoriasIds[0], // Primera categoría como principal (compatibilidad)
                 imagen_url: finalImageUrls[0] || null, // Main image is the first one
                 es_multimarca: esMultimarca
             };
@@ -234,7 +307,16 @@ export default function ProductForm({ productId }: { productId?: string }) {
 
             if (!currentProductId) throw new Error('No se pudo obtener el ID del producto.');
 
-            // 3. Save Compatibilities
+            // 3. Save product categories (N:M)
+            await supabase.from('producto_categorias').delete().eq('producto_id', currentProductId);
+            const categoriaDocs = categoriasIds.map(catId => ({
+                producto_id: currentProductId,
+                categoria_id: catId
+            }));
+            const { error: catError } = await supabase.from('producto_categorias').insert(categoriaDocs);
+            if (catError) console.error('Error saving categories:', catError);
+
+            // 4. Save Compatibilities
             // Delete old ones first if editing
             if (productId) {
                 await supabase.from('compatibilidad').delete().eq('producto_id', currentProductId);
@@ -305,12 +387,39 @@ export default function ProductForm({ productId }: { productId?: string }) {
                         <label className="block text-sm font-bold text-gray-700 mb-1 tracking-tight">Descripción</label>
                         <textarea rows={3} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#0033a0] focus:ring-[#0033a0] sm:text-sm px-4 py-2.5 border text-gray-900" placeholder="Detalles técnicos y características..." />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1 tracking-tight">Categoría *</label>
-                        <select required value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} className="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#0033a0] focus:ring-[#0033a0] sm:text-sm px-4 py-2.5 border text-gray-900 bg-white">
-                            <option value="">Seleccione categoría</option>
-                            {categorias.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                        </select>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-bold text-gray-700 mb-2 tracking-tight">
+                            Categorías *
+                            <span className="ml-2 text-xs font-normal text-gray-400">(Selecciona una o varias)</span>
+                        </label>
+                        {categoriasIds.length === 0 && (
+                            <p className="text-xs text-red-500 mb-2 font-medium">⚠ Debe seleccionar al menos una categoría</p>
+                        )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                            {categorias.map(cat => (
+                                <label
+                                    key={cat.id}
+                                    className={`flex items-center gap-1.5 px-2 py-2 rounded-lg border cursor-pointer transition-all select-none text-xs font-bold leading-tight
+                                        ${categoriasIds.includes(cat.id)
+                                            ? 'bg-[#0033a0] text-white border-[#0033a0] shadow-sm'
+                                            : 'bg-white text-gray-700 border-gray-200 hover:border-[#0033a0] hover:bg-blue-50'}`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={categoriasIds.includes(cat.id)}
+                                        onChange={() => handleCategoriaToggle(cat.id)}
+                                        className="sr-only"
+                                    />
+                                    <svg
+                                        className={`h-3.5 w-3.5 shrink-0 transition-opacity ${categoriasIds.includes(cat.id) ? 'opacity-100' : 'opacity-0'}`}
+                                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                    >
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                    <span className="break-words">{cat.nombre}</span>
+                                </label>
+                            ))}
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1 tracking-tight">Stock Disponible *</label>
@@ -429,16 +538,54 @@ export default function ProductForm({ productId }: { productId?: string }) {
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-black text-gray-400 uppercase mb-2 tracking-widest">Paso 2: Seleccione Familia</label>
-                        <select disabled={!selectedMarca} value={selectedFamilia} onChange={(e) => setSelectedFamilia(e.target.value)} className="w-full rounded-lg border-gray-200 shadow-sm px-4 py-3 border bg-white text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-[#0033a0]/20 transition-all disabled:bg-gray-100 disabled:opacity-50">
-                            <option value="">Todas las familias</option>
-                            {filteredFamilias.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
-                        </select>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-widest">Paso 2: Seleccione Familia</label>
+                            {selectedMarca && !isCreatingFamilia && (
+                                <button type="button" onClick={() => setIsCreatingFamilia(true)} className="text-xs font-bold text-[#0033a0] hover:underline flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                                    Nueva Familia
+                                </button>
+                            )}
+                        </div>
+                        {isCreatingFamilia ? (
+                            <div className="flex gap-2">
+                                <input type="text" value={newFamiliaName} onChange={(e) => setNewFamiliaName(e.target.value)} placeholder="Ej. TIGGO 8" className="w-full rounded-lg border-gray-200 shadow-sm px-4 py-2 border bg-white text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-[#0033a0]/20 transition-all uppercase" autoFocus />
+                                <button type="button" onClick={handleCreateFamilia} disabled={creatingEntity || !newFamiliaName.trim()} className="bg-[#0033a0] text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50">Guardar</button>
+                                <button type="button" onClick={() => {setIsCreatingFamilia(false); setNewFamiliaName('');}} className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm font-bold">X</button>
+                            </div>
+                        ) : (
+                            <select disabled={!selectedMarca} value={selectedFamilia} onChange={(e) => setSelectedFamilia(e.target.value)} className="w-full rounded-lg border-gray-200 shadow-sm px-4 py-3 border bg-white text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-[#0033a0]/20 transition-all disabled:bg-gray-100 disabled:opacity-50">
+                                <option value="">Todas las familias</option>
+                                {filteredFamilias.map(f => <option key={f.id} value={f.id}>{f.nombre}</option>)}
+                            </select>
+                        )}
                     </div>
                 </div>
 
                 <div className="bg-white border-2 border-dashed border-blue-50 rounded-xl p-6 mb-6">
-                    <label className="block text-xs font-black text-[#0033a0] uppercase mb-4 tracking-widest">Paso 3: Marque Modelos Compatibles</label>
+                    <div className="flex items-center justify-between mb-4">
+                        <label className="block text-xs font-black text-[#0033a0] uppercase tracking-widest">Paso 3: Marque Modelos Compatibles</label>
+                        {selectedFamilia && !isCreatingModelo && (
+                            <button type="button" onClick={() => setIsCreatingModelo(true)} className="text-xs font-bold text-[#0033a0] bg-blue-50 px-3 py-1.5 rounded hover:bg-blue-100 transition-colors flex items-center gap-1 border border-blue-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" /></svg>
+                                Nuevo Modelo
+                            </button>
+                        )}
+                    </div>
+                    
+                    {isCreatingModelo && (
+                        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center bg-blue-50/50 p-4 rounded-lg border border-blue-100 mb-4 shadow-sm">
+                            <span className="text-sm font-bold text-[#0033a0] shrink-0">Nombre del Modelo:</span>
+                            <input type="text" value={newModeloName} onChange={(e) => setNewModeloName(e.target.value)} placeholder="Ej. 1.5 TURBO" className="flex-1 w-full rounded-lg border-blue-200 shadow-sm px-3 py-2 border bg-white text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-[#0033a0]/20 uppercase" autoFocus />
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <button type="button" onClick={handleCreateModelo} disabled={creatingEntity || !newModeloName.trim()} className="flex-1 sm:flex-none bg-[#0033a0] text-white px-5 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-blue-800 disabled:opacity-50 transition-all whitespace-nowrap">
+                                    {creatingEntity ? 'Guardando...' : 'Guardar'}
+                                </button>
+                                <button type="button" onClick={() => {setIsCreatingModelo(false); setNewModeloName('');}} className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all">Cancelar</button>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="max-h-64 overflow-y-auto custom-scrollbar">
                         {selectedFamilia ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

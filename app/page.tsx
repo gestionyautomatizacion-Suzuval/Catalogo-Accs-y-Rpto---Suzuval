@@ -60,6 +60,10 @@ export default function Home() {
           categoria_item_id,
           es_multimarca,
           categorias_items (nombre),
+          producto_categorias (
+            categoria_id,
+            categorias_items (nombre)
+          ),
           productos_imagenes (url),
           compatibilidad (
             modelo_id,
@@ -79,16 +83,21 @@ export default function Home() {
         query = query.or(`sku.ilike.%${searchQuery}%,nombre.ilike.%${searchQuery}%`);
       }
 
-      // Aplicar filtro de categorías
-      if (activeFilters.categories.length > 0) {
-        query = query.in('categoria_item_id', activeFilters.categories);
-      }
-
       const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 
       let filteredData = data || [];
+
+      // Aplicar filtro de categorías (usando tabla N:M producto_categorias)
+      if (activeFilters.categories.length > 0) {
+        filteredData = filteredData.filter(producto => {
+          const cats = (producto.producto_categorias || []).map((pc: any) => pc.categoria_id);
+          // Incluir también la categoría legacy por compatibilidad
+          if (producto.categoria_item_id) cats.push(producto.categoria_item_id);
+          return activeFilters.categories.some(catId => cats.includes(catId));
+        });
+      }
 
       // Aplicar filtro de marcas y familias (esto requiere filtrar en cliente o un join más complejo en Supabase)
       if (activeFilters.brands.length > 0 || activeFilters.families.length > 0) {
@@ -215,6 +224,7 @@ export default function Home() {
                     precioOferta={product.precio_oferta}
                     stock={product.stock}
                     categoriaNombre={product.categorias_items?.nombre || 'General'}
+                    categorias={(product.producto_categorias || []).map((pc: any) => pc.categorias_items?.nombre).filter(Boolean)}
                     imagenUrl={product.imagen_url}
                     onAddToCart={handleAddToCart}
                     onClickCard={() => setSelectedProduct(product)}

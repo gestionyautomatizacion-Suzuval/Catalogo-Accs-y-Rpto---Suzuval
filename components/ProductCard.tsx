@@ -7,10 +7,11 @@ interface ProductCardProps {
     nombre: string;
     descripcion: string;
     precio: number;
-    precioOferta?: number; // Opcional si hay descuento
+    precioOferta?: number;
     stock: number;
     categoriaNombre: string;
-    imagenUrl?: string; // Opcional, usará un placeholder si no hay
+    categorias?: string[]; // Múltiples categorías (nuevo campo)
+    imagenUrl?: string;
     onAddToCart: (id: string) => void;
     layout?: 'standard' | 'compact';
     onClickCard?: () => void;
@@ -25,6 +26,7 @@ export default function ProductCard({
     precioOferta,
     stock,
     categoriaNombre,
+    categorias,
     imagenUrl,
     onAddToCart,
     layout = 'standard',
@@ -70,12 +72,19 @@ export default function ProductCard({
 
             {/* Contenido / Info */}
             <div className={`flex flex-col flex-grow ${layout === 'compact' ? 'p-3' : 'p-4 md:p-5'}`}>
-                {/* Categoría y SKU */}
-                <div className="flex justify-between items-center mb-2.5">
-                    <span className={`font-bold text-blue-600 uppercase tracking-widest line-clamp-1 pr-2 ${layout === 'compact' ? 'text-[8px]' : 'text-[10px]'}`}>
-                        {categoriaNombre}
-                    </span>
-                    <span className={`text-gray-400 font-medium tracking-wide ${layout === 'compact' ? 'text-[8px]' : 'text-[10px]'}`}>CÓDIGO: {sku}</span>
+                {/* Categorías y SKU */}
+                <div className="flex justify-between items-start mb-2.5 gap-1">
+                    <div className="flex flex-wrap gap-1 flex-1 min-w-0">
+                        {(categorias && categorias.length > 0 ? categorias : [categoriaNombre]).map((cat, i) => (
+                            <span
+                                key={i}
+                                className={`font-bold text-blue-600 uppercase tracking-widest bg-blue-50 rounded px-1.5 py-0.5 line-clamp-1 ${layout === 'compact' ? 'text-[7px]' : 'text-[9px]'}`}
+                            >
+                                {cat}
+                            </span>
+                        ))}
+                    </div>
+                    <span className={`text-gray-400 font-medium tracking-wide flex-shrink-0 ${layout === 'compact' ? 'text-[8px]' : 'text-[10px]'}`}>CÓDIGO: {sku}</span>
                 </div>
 
                 {/* Título y Descripción */}
